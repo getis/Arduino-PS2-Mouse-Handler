@@ -4,7 +4,7 @@ This library allows you to easily interface any PS2 compatible mouse to your Ard
 It is based on the code by kristopher which can be found at https://github.com/kristopher/PS2-Mouse-Arduino.
 I've included a basic example which shows how to gather the data from the mouse and access the x / y movement, scroll wheel, button states and button click data.
 # Installation
-Download and copy the library folder to the Arduino library folder on your development machine.
+Download and unzip the repository. Copy the PS2MouseHandler folder to the Arduino library folder on your development machine.
 # How to use the Handler
 Include the library header file
 
