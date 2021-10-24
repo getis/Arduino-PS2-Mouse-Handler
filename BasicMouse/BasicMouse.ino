@@ -10,7 +10,7 @@ PS2MouseHandler mouse(MOUSE_CLOCK, MOUSE_DATA, PS2_MOUSE_REMOTE);
 void setup()
 {
   Serial.begin(38400);
-  if(mouse.initialize() != 0){
+  if(mouse.initialise() != 0){
     // mouse error
     Serial.println("mouse error");
   };
