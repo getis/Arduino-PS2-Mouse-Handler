@@ -1,0 +1,40 @@
+#######################################
+# Syntax Coloring Map for PS2MouseHandler
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+PS2MouseHandler	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+initialize 	KEYWORD2
+clock_pin	KEYWORD2
+data_pin	KEYWORD2
+device_id   KEYWORD2
+status  KEYWORD2
+x_movement  KEYWORD2
+y_movement  KEYWORD2
+z_movement  KEYWORD2
+button  KEYWORD2
+clicked KEYWORD2
+get_data    KEYWORD2
+enable	KEYWORD2
+disable	KEYWORD2
+set_remote_mode	KEYWORD2
+set_stream_mode	KEYWORD2
+set_resolution	KEYWORD2
+set_scaling_2_1	KEYWORD2
+set_scaling_1_1	KEYWORD2
+set_sample_rate	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+PS2_MOUSE_STREAM	LITERAL1
+PS2_MOUSE_REMOTE	LITERAL1
