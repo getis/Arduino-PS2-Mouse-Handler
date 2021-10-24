@@ -10,7 +10,7 @@ class PS2MouseHandler
     int _clock_pin;
     int _data_pin;
     int _mode;
-    int _initialized;
+    int _initialised;
     int _enabled;
     int _disabled;
     bool _no_mouse;
@@ -34,10 +34,11 @@ class PS2MouseHandler
     void set_mode(int);
     void write(int);
     int read();
+    int try_initialise();
 
   public:
     PS2MouseHandler(int, int, int mode = PS2_MOUSE_REMOTE);
-    int initialize();
+    int initialise();
     int clock_pin();
     int data_pin();
     int device_id();

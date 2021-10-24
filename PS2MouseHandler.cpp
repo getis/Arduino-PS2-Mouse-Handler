@@ -7,7 +7,7 @@ PS2MouseHandler::PS2MouseHandler(int clock_pin, int data_pin, int mode) {
   _clock_pin = clock_pin;
   _data_pin = data_pin;
   _mode = mode;
-  _initialized = false;
+  _initialised = false;
   _disabled = true;
   _enabled = false;
   _device_id = 0x00;
@@ -75,15 +75,28 @@ uint8_t PS2MouseHandler::get_button_mask(int button){
   return mask;
 }
 
-int PS2MouseHandler::initialize() {
-  pull_high(_clock_pin);
+int PS2MouseHandler::initialise() {
+
+  int counter = 0;
+  int return_value = 0;
+  do {
+    delay(50);
+    return_value = try_initialise();
+    counter ++;
+  } while ((return_value != 0) && (counter < 10));
+  return return_value;
+}
+
+int PS2MouseHandler::try_initialise() {
+  pull_high(_clock_pin); // inhibit communications
   pull_high(_data_pin);
-  delay(20);
+  delay(500); // let mouse power on
   write(0xff); // Send Reset to the mouse
   if (_no_mouse){
     return 100; // no mouse
   }
   read_byte();  // Read ack byte
+  
   //delay(20); // Not sure why this needs the delay
   read_byte();  // blank
   read_byte();  // blank
@@ -102,7 +115,7 @@ int PS2MouseHandler::initialize() {
     enable_data_reporting(); // Tell the mouse to start sending data again
   }
   delayMicroseconds(100);
-  _initialized = 1;
+  _initialised = 1;
   get_data(); // initial read of mouse data
   _last_status = _status; // suppress false button presses
   return 0; // OK
@@ -117,7 +130,7 @@ void PS2MouseHandler::set_mode(int data) {
   if (_mode == PS2_MOUSE_STREAM) {
     enable_data_reporting(); // Tell the mouse to start sending data again
   }
-  if (_initialized) {
+  if (_initialised) {
     delayMicroseconds(100);
   }
 }
@@ -207,7 +220,7 @@ void PS2MouseHandler::write(int data) {
   pull_high(_clock_pin); // Start Bit
   // wait for mouse to take control of clock
   while (digitalRead(_clock_pin)) {
-    if (millis() - start_time > 100) {
+    if (millis() - start_time >= 100) {
       // no connection to mouse
       _no_mouse = true;
       return;
@@ -233,6 +246,7 @@ void PS2MouseHandler::write(int data) {
   } else {
     pull_low(_data_pin);
   }
+  start_time = millis();
   while (!digitalRead(_clock_pin)) {;}
   while (digitalRead(_clock_pin)) {;}
   pull_high(_data_pin);

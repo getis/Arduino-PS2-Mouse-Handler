@@ -12,7 +12,7 @@ PS2MouseHandler	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-initialize 	KEYWORD2
+initialise 	KEYWORD2
 clock_pin	KEYWORD2
 data_pin	KEYWORD2
 device_id   KEYWORD2
