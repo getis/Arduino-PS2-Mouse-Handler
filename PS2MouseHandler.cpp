@@ -79,8 +79,8 @@ int PS2MouseHandler::initialise() {
 
   int counter = 0;
   int return_value = 0;
+  // poll mouse to get a connection
   do {
-    delay(50);
     return_value = try_initialise();
     counter ++;
   } while ((return_value != 0) && (counter < 10));
@@ -88,22 +88,21 @@ int PS2MouseHandler::initialise() {
 }
 
 int PS2MouseHandler::try_initialise() {
-  pull_high(_clock_pin); // inhibit communications
+  pull_high(_clock_pin); // idle state
   pull_high(_data_pin);
   delay(500); // let mouse power on
   write(0xff); // Send Reset to the mouse
   if (_no_mouse){
     return 100; // no mouse
   }
-  read_byte();  // Read ack byte
-  
-  //delay(20); // Not sure why this needs the delay
-  read_byte();  // blank
-  read_byte();  // blank
-  //delay(20); // Not sure why this needs the delay
+  uint8_t bat_code = read_byte();  // Read BAT completion code
+  if (bat_code == 0xFC){ // error?
+    _no_mouse = true;
+    return 101; // BAT failed
+  }
+  read_byte();  // Device ID - ignore for now - should be 0x00 for mouse
 
   // set scroll wheel mode if available
-  disable_data_reporting();
   set_sample_rate(200, true);
   set_sample_rate(100, true);
   set_sample_rate(80, true);
@@ -222,6 +221,7 @@ void PS2MouseHandler::write(int data) {
   while (digitalRead(_clock_pin)) {
     if (millis() - start_time >= 100) {
       // no connection to mouse
+      pull_high(_data_pin); // back to waiting
       _no_mouse = true;
       return;
     }
@@ -246,33 +246,36 @@ void PS2MouseHandler::write(int data) {
   } else {
     pull_low(_data_pin);
   }
-  start_time = millis();
+  // wait for clock cycle
   while (!digitalRead(_clock_pin)) {;}
   while (digitalRead(_clock_pin)) {;}
-  pull_high(_data_pin);
-  delayMicroseconds(50);
-  while (digitalRead(_clock_pin)) {;}
-  while ((!digitalRead(_clock_pin)) || (!digitalRead(_data_pin))) {;} // wait for mouse to switch modes
-  pull_low(_clock_pin); // put a hold on the incoming data.
+  pull_high(_data_pin); // release data line
+  while (digitalRead(_data_pin)) {;} // wait for mouse to take over data line
+  while (digitalRead(_clock_pin)) {;} // wait for mouse to take over clock
+  while ((!digitalRead(_clock_pin)) && (!digitalRead(_data_pin))) {;} // wait for mouse to release clock and data
+}
+
+void PS2MouseHandler::hold_incoming_data(){
+  pull_low(_clock_pin);
 }
 
 void PS2MouseHandler::get_data() {
   _last_status = _status; // save copy of status byte
   write(0xeb); // Send Read Data
   read_byte(); // Read Ack Byte
-  _status = read(); // Status bit
-  _x_movement = read_movement_x(_status); // X Movement Packet
-  _y_movement = read_movement_y(_status); // Y Movement Packet
+  _status = read(); // Status byte
+  _x_movement = read_movement_9(bitRead(_status, 4)); // X Movement Packet
+  _y_movement = read_movement_9(bitRead(_status, 5)); // Y Movement Packet
   if (_device_id > 0){
     // read scroll wheel
-    _z_movement = read_movement_z(_status); // Y Movement Packet
+    _z_movement = read_movement_z(); // Z Movement Packet
   }
   else {
     _z_movement = 0;
   };
 }
 
-int PS2MouseHandler::read() {
+uint8_t PS2MouseHandler::read() {
   return read_byte();
 }
 
@@ -283,20 +286,21 @@ uint8_t PS2MouseHandler::read_byte() {
   pull_high(_data_pin);
   delayMicroseconds(50);
 
+  // read start bit but check for timeout
   while (digitalRead(_clock_pin)) {
     if (millis() - start_time > 100) {
       // timeout
       return 0;
     }
   }
-  //delayMicroseconds(5);  // not sure why.
-  while (!digitalRead(_clock_pin)) {;} // eat start bit
+  // delayMicroseconds(5);
+  while (!digitalRead(_clock_pin)) {;}
+  // read data bits
   for (int i = 0; i < 8; i++) {
     bitWrite(data, i, read_bit());
   }
   read_bit(); // Partiy Bit
   read_bit(); // Stop bit should be 1
-  pull_low(_clock_pin);
   return data;
 }
 
@@ -307,31 +311,31 @@ int PS2MouseHandler::read_bit() {
   return bit;
 }
 
-int16_t PS2MouseHandler::read_movement_x(int status) {
-  int16_t x = read();
+int16_t PS2MouseHandler::read_movement_9(bool sign_bit) {
+  // movement data is a 9 bit signed int using status bit and data reading
+  int16_t value = read();
   // use status bit to get sign of reading
-  if (bitRead(status, 4)) {
-    for(int i = 8; i < 16; ++i) {
-      x |= (1<<i);
-    }
+  if (sign_bit) {
+    // fill upper byte with 1's for negative number
+    value |= 0xF0;
   }
-  return x;
+  return value;
 }
 
-int16_t PS2MouseHandler::read_movement_y(int status) {
-  int16_t y = read();
-  // use status bit to get sign of reading
-  if (bitRead(status, 5)) {
-    for(int i = 8; i < 16; ++i) {
-      y |= (1<<i);
-    }
+int8_t PS2MouseHandler::read_movement_z() {
+  // z data can be mixed with extra button data so only the lower nibble is movement
+  // 4 bit signed
+  uint8_t value = read(); // an 8 bit unsigned value
+  // test bit 3 for sign
+  if(bitRead(value, 3)){
+    // negative - set upper nibble to 1's
+    value |= 0xF0;
   }
-  return y;
-}
-
-int16_t PS2MouseHandler::read_movement_z(int status) {
-  int8_t z = read(); // z is an 8 bit signed value
-  return z;
+  else {
+    // positive - set upper nibble to 0's
+    value &= 0x0F;
+  }
+  return value;
 }
 
 void PS2MouseHandler::pull_low(int pin) {

@@ -25,15 +25,15 @@ class PS2MouseHandler
     int get_device_id();
     uint8_t read_byte();
     int read_bit();
-    int16_t read_movement_x(int);
-    int16_t read_movement_y(int);
-    int16_t read_movement_z(int);
+    int16_t read_movement_9(bool);
+    int8_t read_movement_z();
     uint8_t get_button_mask(int);
     void pull_high(int);
     void pull_low(int);
     void set_mode(int);
     void write(int);
-    int read();
+    void hold_incoming_data();
+    uint8_t read();
     int try_initialise();
 
   public:
