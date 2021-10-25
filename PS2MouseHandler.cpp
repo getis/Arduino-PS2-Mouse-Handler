@@ -317,7 +317,7 @@ int16_t PS2MouseHandler::read_movement_9(bool sign_bit) {
   // use status bit to get sign of reading
   if (sign_bit) {
     // fill upper byte with 1's for negative number
-    value |= 0xF0;
+    value |= 0xFF00;
   }
   return value;
 }
