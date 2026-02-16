@@ -136,7 +136,10 @@ void PS2MouseHandler::set_mode(int data) {
 
 int PS2MouseHandler:: get_device_id(){
   write(0xf2); // Ask mouse for device ID.
-  int id =  read_byte(); // Read first byte - gives overall device id
+  int id = read_byte(); // Read first byte - gives overall device id
+  if (id == 0xFA) {
+    id = read_byte(); // first byte was really the ack byte (as per PS/2 spec), so read it again
+  }
   read_byte(); // try to read second byte if sent - refines device type - not needed
   return id;
 }
